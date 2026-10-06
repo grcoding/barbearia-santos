@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barbearia Santos | Tradição, Lâmina & Estilo</title>
+
+  <!-- Tipografias: Cinzel (Editorial/Tradição) + Syne/Inter (Moderna) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Syne:wght@500;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- CDNs: Three.js e GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #070708;
+      --bg-surface: #111113;
+      --bg-card: rgba(22, 22, 26, 0.75);
+      --red-primary: #dc2626;
+      --red-bright: #ef4444;
+      --red-glow: rgba(220, 38, 38, 0.45);
+      --text-main: #f5f5f7;
+      --text-muted: #a1a1aa;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-red: rgba(220, 38, 38, 0.35);
+      --font-display: 'Cinzel', serif;
+      --font-heading: 'Syne', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    html, body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    /* Grain Overlay Analógico */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0);
+      background-size: 24px 24px;
+      pointer-events: none;
+      z-index: 99;
+    }
+
+    /* Header & Navegação */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 20px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 50;
+      backdrop-filter: blur(16px);
+      background: rgba(7, 7, 8, 0.7);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-logo span {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #fff;
+    }
+
+    .brand-logo span em {
+      color: var(--red-bright);
+      font-style: normal;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .sound-toggle {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+    }
+
+    .sound-toggle:hover, .sound-toggle.active {
+      border-color: var(--red-primary);
+      color: #fff;
+      box-shadow: 0 0 14px var(--red-glow);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--red-primary), #991b1b);
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 8px;
+      border: none;
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 4px 20px var(--red-glow);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(239, 68, 68, 0.6);
+    }
+
+    /* Hero Section com Canvas 3D e Lâmina Reativa */
+    #hero {
+      position: relative;
+      height: 100vh;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0 8vw;
+      overflow: hidden;
+    }
+
+    #webgl-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: all;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 620px;
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(220, 38, 38, 0.12);
+      border: 1px solid var(--border-red);
+      color: var(--red-bright);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.8rem, 6vw, 4.8rem);
+      line-height: 1.05;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin-bottom: 24px;
+      text-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    }
+
+    .hero-title span {
+      background: linear-gradient(180deg, #ffffff, #888888);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-title em {
+      background: linear-gradient(180deg, #ff6b6b, var(--red-primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-style: normal;
+    }
+
+    .hero-desc {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 36px;
+      max-width: 480px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 16px;
+      pointer-events: all;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: #fff;
+      padding: 12px 26px;
+      border-radius: 8px;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: all 0.3s;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #fff;
+    }
+
+    /* Seção 2: Frosted Steam Glass (Espelho Embaçado Limpável) */
+    #steam-experience {
+      position: relative;
+      padding: 120px 8vw;
+      background: var(--bg-surface);
+      overflow: hidden;
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto 60px;
+    }
+
+    .section-header h2 {
+      font-family: var(--font-display);
+      font-size: 2.6rem;
+      margin-bottom: 16px;
+    }
+
+    .section-header h2 em {
+      color: var(--red-bright);
+      font-style: normal;
+    }
+
+    .section-header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    .steam-mirror-card {
+      position: relative;
+      width: 100%;
+      max-width: 1080px;
+      height: 520px;
+      margin: 0 auto;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Fundo nítido do espelho */
+    .mirror-reveal {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(17,17,19,0.9), rgba(7,7,8,0.95)), 
+                  radial-gradient(circle at 75% 30%, rgba(220,38,38,0.3), transparent 60%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .mirror-reveal h3 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+
+    .mirror-reveal p {
+      color: var(--text-muted);
+      max-width: 500px;
+      font-size: 0.95rem;
+    }
+
+    /* Canvas que simula o vapor e condensação */
+    #steam-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      z-index: 2;
+    }
+
+    .steam-hint {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--border-subtle);
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* Seção 3: Spatial Before & After (Transformação) */
+    #transformation {
+      padding: 120px 8vw;
+      background: var(--bg-dark);
+    }
+
+    .compare-container {
+      position: relative;
+      width: 100%;
+      max-width: 980px;
+      height: 520px;
+      margin: 0 auto;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .compare-layer {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: flex-end;
+      padding: 32px;
+    }
+
+    /* Simulação de textura estética dos dois estados */
+    .compare-layer.before {
+      background: radial-gradient(circle at center, #27272a, #09090b);
+      z-index: 1;
+    }
+
+    .compare-layer.after {
+      background: radial-gradient(circle at center, #450a0a, #09090b);
+      z-index: 2;
+      width: 50%;
+      border-right: 2px solid var(--red-bright);
+      box-shadow: 10px 0 35px var(--red-glow);
+    }
+
+    .compare-badge {
+      background: rgba(0,0,0,0.85);
+      border: 1px solid var(--border-subtle);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-family: var(--font-heading);
+      letter-spacing: 1px;
+    }
+
+    .compare-handle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 4px;
+      background: var(--red-bright);
+      z-index: 3;
+      cursor: ew-resize;
+      transform: translateX(-50%);
+    }
+
+    .handle-circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 42px;
+      height: 42px;
+      background: #000;
+      border: 2px solid var(--red-bright);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 14px;
+      box-shadow: 0 0 20px var(--red-glow);
+    }
+
+    /* Seção 4: Menu de Serviços com Hover Cinematográfico */
+    #services {
+      padding: 120px 8vw;
+      background: var(--bg-surface);
+      position: relative;
+    }
+
+    .services-list {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .service-row {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 28px 36px;
+      background: var(--bg-card);
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .service-row:hover {
+      border-color: var(--red-primary);
+      transform: scale(1.015) translateX(6px);
+      box-shadow: 0 10px 30px rgba(220, 38, 38, 0.15);
+      background: rgba(28, 28, 32, 0.9);
+    }
+
+    .service-name {
+      font-family: var(--font-display);
+      font-size: 1.45rem;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+
+    .service-duration {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .service-price {
+      font-family: var(--font-heading);
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--red-bright);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Floating Tooltip do Serviço no Cursor */
+    .service-tooltip {
+      position: fixed;
+      pointer-events: none;
+      z-index: 100;
+      padding: 12px 20px;
+      background: rgba(10, 10, 12, 0.95);
+      border: 1px solid var(--red-primary);
+      border-radius: 10px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+      opacity: 0;
+      transform: translate(-50%, -120%);
+      transition: opacity 0.25s, transform 0.2s ease-out;
+      font-size: 0.85rem;
+      color: #fff;
+    }
+
+    /* Seção 5: Agendamento com Barber Pole Iluminado */
+    #booking {
+      padding: 120px 8vw;
+      background: var(--bg-dark);
+      position: relative;
+    }
+
+    .booking-wrapper {
+      max-width: 1080px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .booking-experience {
+      position: relative;
+      height: 480px;
+      background: radial-gradient(circle at center, rgba(220,38,38,0.1), transparent 70%);
+      border-radius: 20px;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Barber Pole 3D em CSS animado */
+    .barber-pole-cylinder {
+      position: relative;
+      width: 70px;
+      height: 260px;
+      border-radius: 35px;
+      overflow: hidden;
+      border: 3px solid rgba(255,255,255,0.2);
+      box-shadow: 0 0 50px var(--red-glow), inset 0 0 20px rgba(0,0,0,0.8);
+      background: repeating-linear-gradient(
+        45deg,
+        #fff 0,
+        #fff 20px,
+        #dc2626 20px,
+        #dc2626 40px,
+        #111 40px,
+        #111 60px
+      );
+      background-size: 200% 200%;
+      animation: spinStripes 3s linear infinite;
+    }
+
+    @keyframes spinStripes {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 160px; }
+    }
+
+    .pole-cap {
+      width: 90px;
+      height: 20px;
+      background: linear-gradient(180deg, #e4e4e7, #52525b);
+      border-radius: 6px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    .booking-form-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 44px;
+      backdrop-filter: blur(16px);
+    }
+
+    .booking-form-box h3 {
+      font-family: var(--font-display);
+      font-size: 1.85rem;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .form-control {
+      width: 100%;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 14px 16px;
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .form-control:focus {
+      border-color: var(--red-primary);
+      box-shadow: 0 0 14px var(--red-glow);
+    }
+
+    /* Responsividade */
+    @media (max-width: 960px) {
+      header { padding: 16px 24px; }
+      .booking-wrapper { grid-template-columns: 1fr; }
+      .booking-experience { height: 260px; }
+      .hero-title { font-size: 2.8rem; }
+      .service-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .compare-container { height: 380px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <a href="#" class="brand-logo">
+      <span>SANTOS<em>.</em></span>
+    </a>
+    <div class="nav-actions">
+      <button class="sound-toggle" id="soundToggle">
+        <span id="soundIcon">🔇</span> Som
+      </button>
+      <a href="#booking" class="btn-primary" onclick="playClickSound()">Agendar Horário</a>
+    </div>
+  </header>
+
+  <!-- 1. Hero com Navalha 3D Interativa -->
+  <section id="hero">
+    <canvas id="webgl-canvas"></canvas>
+    
+    <div class="hero-content">
+      <div class="hero-badge">Est. 2018 • Excelência Artesanal</div>
+      <h1 class="hero-title">A ARTE DO CORTE <em>FEITA NA LÂMINA.</em></h1>
+      <p class="hero-desc">Precisão milimétrica, toalha quente e rituais clássicos de barbearia num ambiente pensado para cavalheiros que valorizam presença e identidade.</p>
+      <div class="hero-ctas">
+        <a href="#booking" class="btn-primary" onclick="playClickSound()">Reservar Cadeira</a>
+        <a href="#services" class="btn-secondary" onclick="playClickSound()">Explorar Serviços</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Interactive Frosted Steam (Espelho Embaçado) -->
+  <section id="steam-experience">
+    <div class="section-header">
+      <h2>O RITUAL DA <em>TOALHA QUENTE</em></h2>
+      <p>Passe o mouse ou o dedo sobre o espelho embaçado para limpar o vapor e descobrir o padrão Santos de atendimento.</p>
+    </div>
+
+    <div class="steam-mirror-card">
+      <div class="mirror-reveal">
+        <h3>Relaxamento & Cuidado Térmico</h3>
+        <p>Abertura de poros com vapor de ozônio, óleos essenciais de cedro e massagem facial antes de cada navalhada.</p>
+      </div>
+      <canvas id="steam-canvas"></canvas>
+      <div class="steam-hint">Arraste para limpar o vapor</div>
+    </div>
+  </section>
+
+  <!-- 3. Spatial Before & After (Transformação) -->
+  <section id="transformation">
+    <div class="section-header">
+      <h2>ALINHAMENTO & <em>VISAGISMO</em></h2>
+      <p>Arraste o divisor de aço para conferir a precisão da linha e a estrutura do fade.</p>
+    </div>
+
+    <div class="compare-container" id="compareSlider">
+      <div class="compare-layer before">
+        <div class="compare-badge">Natural / Sem Corte</div>
+      </div>
+      <div class="compare-layer after" id="afterLayer">
+        <div class="compare-badge">Alinhamento Santos • Razor Fade</div>
+      </div>
+      <div class="compare-handle" id="sliderHandle">
+        <div class="handle-circle">↔</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Menu de Serviços com Hover Cinematográfico -->
+  <section id="services">
+    <div class="section-header">
+      <h2>CARDÁPIO DE <em>RITUAIS</em></h2>
+      <p>Passe o cursor sobre os serviços para conferir os detalhes e tempos de execução.</p>
+    </div>
+
+    <div class="services-list">
+      <div class="service-row" data-info="Lavagem prévia, corte com tesoura e máquina de alta precisão, finalização com pomada matte premium.">
+        <div>
+          <div class="service-name">Corte Executivo & Fade</div>
+          <div class="service-duration">Duração: 45 min • Inclui lavagem & finalização</div>
+        </div>
+        <div class="service-price">R$ 65,00</div>
+      </div>
+
+      <div class="service-row" data-info="Barboterapia com 2 toalhas quentes, navalhete descartável, esfoliação facial e bálsamo hidratante.">
+        <div>
+          <div class="service-name">Barboterapia Clássica Santos</div>
+          <div class="service-duration">Duração: 40 min • Vapor de ozônio & toalha quente</div>
+        </div>
+        <div class="service-price">R$ 55,00</div>
+      </div>
+
+      <div class="service-row" data-info="A experiência definitiva: corte completo, alinhamento de barba, esfoliação e cerveja artesanal cortesia.">
+        <div>
+          <div class="service-name">Combo Mestre (Cabelo + Barba)</div>
+          <div class="service-duration">Duração: 1h 20 min • Ritual completo com consultoria</div>
+        </div>
+        <div class="service-price">R$ 110,00</div>
+      </div>
+
+      <div class="service-row" data-info="Correção sutil de falhas e realce das linhas com pigmento natural de longa durabilidade.">
+        <div>
+          <div class="service-name">Pigmentação & Camuflagem</div>
+          <div class="service-duration">Duração: 30 min • Acabamento de alto contraste</div>
+        </div>
+        <div class="service-price">R$ 45,00</div>
+      </div>
+    </div>
+
+    <div class="service-tooltip" id="serviceTooltip"></div>
+  </section>
+
+  <!-- 5. Agendador com Barber Pole Iluminado -->
+  <section id="booking">
+    <div class="booking-wrapper">
+      <div class="booking-experience">
+        <div class="pole-cap"></div>
+        <div class="barber-pole-cylinder"></div>
+        <div class="pole-cap"></div>
+      </div>
+
+      <div class="booking-form-box">
+        <h3>RESERVE SEU HORÁRIO</h3>
+        <form onsubmit="handleBooking(event)">
+          <div class="form-group">
+            <label>Nome Completo</label>
+            <input type="text" required class="form-control" placeholder="Seu nome">
+          </div>
+          <div class="form-group">
+            <label>WhatsApp</label>
+            <input type="tel" required class="form-control" placeholder="(00) 00000-0000">
+          </div>
+          <div class="form-group">
+            <label>Selecione o Serviço</label>
+            <select class="form-control">
+              <option>Combo Mestre (Cabelo + Barba)</option>
+              <option>Corte Executivo & Fade</option>
+              <option>Barboterapia Clássica</option>
+              <option>Pigmentação & Camuflagem</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Confirmar Agendamento</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lógica JavaScript e WebGL -->
+  <script>
+    /* ========================================================
+       1. WEB AUDIO API - Efeitos Sonoros Sutis
+       ======================================================== */
+    let audioCtx = null;
+    let soundEnabled = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playClickSound() {
+      if (!soundEnabled || !audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.05);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    document.getElementById('soundToggle').addEventListener('click', function() {
+      initAudio();
+      soundEnabled = !soundEnabled;
+      this.classList.toggle('active', soundEnabled);
+      document.getElementById('soundIcon').innerText = soundEnabled ? '🔊' : '🔇';
+      if (soundEnabled) playClickSound();
+    });
+
+    /* ========================================================
+       2. THREE.JS - Navalha de Barbear 3D Metálica & Reativa
+       ======================================================== */
+    const canvas = document.getElementById('webgl-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 8);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+
+    // Iluminação de Estúdio Dramática (Key Light Vermelha + Rim Light Aço)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    const redLight = new THREE.PointLight(0xdc2626, 3, 20);
+    redLight.position.set(-5, 3, 4);
+    scene.add(redLight);
+
+    const metalKeyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    metalKeyLight.position.set(5, 6, 6);
+    scene.add(metalKeyLight);
+
+    // Criação da Navalha com Primitivas Procedurais
+    const razorGroup = new THREE.Group();
+    scene.add(razorGroup);
+
+    // Materiais PBR
+    const bladeMaterial = new THREE.MeshStandardMaterial({
+      color: 0xefefef,
+      metalness: 0.95,
+      roughness: 0.18,
+    });
+
+    const handleMaterial = new THREE.MeshStandardMaterial({
+      color: 0x16161a,
+      metalness: 0.2,
+      roughness: 0.6,
+    });
+
+    const redAccentMaterial = new THREE.MeshStandardMaterial({
+      color: 0xdc2626,
+      metalness: 0.8,
+      roughness: 0.3,
+    });
+
+    // Lâmina de Aço
+    const bladeGeo = new THREE.BoxGeometry(0.12, 3.2, 0.7);
+    const bladeMesh = new THREE.Mesh(bladeGeo, bladeMaterial);
+    bladeMesh.position.set(0, 0.8, 0.3);
+    razorGroup.add(bladeMesh);
+
+    // Cabo Ergonômico de Fibra/Madeira Escura
+    const handleGeo = new THREE.BoxGeometry(0.2, 3.4, 0.8);
+    const handleMesh = new THREE.Mesh(handleGeo, handleMaterial);
+    handleMesh.position.set(0.1, -1.2, -0.2);
+    handleMesh.rotation.x = 0.2;
+    razorGroup.add(handleMesh);
+
+    // Pino de Articulação Vermelho
+    const pinGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.3, 16);
+    const pinMesh = new THREE.Mesh(pinGeo, redAccentMaterial);
+    pinMesh.rotation.z = Math.PI / 2;
+    pinMesh.position.set(0.05, 0.2, 0.1);
+    razorGroup.add(pinMesh);
+
+    // Alinhamento no canto direito em Desktop
+    razorGroup.position.set(window.innerWidth > 960 ? 2.3 : 0, 0, 0);
+    razorGroup.rotation.z = -0.3;
+
+    // Movimento do Mouse (Tilt)
+    let mouseX = 0, mouseY = 0;
+    window.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+      mouseY = -(e.clientY / window.innerHeight - 0.5) * 2;
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Interpolação suave de rotação da navalha seguindo o mouse
+      razorGroup.rotation.y += (mouseX * 0.7 - razorGroup.rotation.y) * 0.05;
+      razorGroup.rotation.x += (-mouseY * 0.5 - razorGroup.rotation.x) * 0.05;
+      razorGroup.position.y = Math.sin(Date.now() * 0.0015) * 0.15;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      razorGroup.position.x = window.innerWidth > 960 ? 2.3 : 0;
+    });
+
+    /* ========================================================
+       3. FROSTED STEAM CANVAS (Vapor Limpável)
+       ======================================================== */
+    const steamCanvas = document.getElementById('steam-canvas');
+    const ctx = steamCanvas.getContext('2d');
+
+    function resizeSteamCanvas() {
+      steamCanvas.width = steamCanvas.parentElement.clientWidth;
+      steamCanvas.height = steamCanvas.parentElement.clientHeight;
+      drawSteam();
+    }
+
+    function drawSteam() {
+      ctx.fillStyle = 'rgba(30, 30, 36, 0.94)';
+      ctx.fillRect(0, 0, steamCanvas.width, steamCanvas.height);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.font = 'bold 16px Inter';
+      ctx.textAlign = 'center';
+    }
+
+    function clearSteamAt(x, y) {
+      ctx.globalCompositeOperation = 'destination-out';
+      const rad = ctx.createRadialGradient(x, y, 10, x, y, 48);
+      rad.addColorStop(0, 'rgba(0,0,0,1)');
+      rad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = rad;
+      ctx.beginPath();
+      ctx.arc(x, y, 48, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    let isDrawing = false;
+    steamCanvas.addEventListener('mousedown', () => isDrawing = true);
+    window.addEventListener('mouseup', () => isDrawing = false);
+    steamCanvas.addEventListener('mousemove', (e) => {
+      const rect = steamCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      clearSteamAt(x, y);
+    });
+
+    // Suporte tátil mobile
+    steamCanvas.addEventListener('touchmove', (e) => {
+      const rect = steamCanvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      clearSteamAt(touch.clientX - rect.left, touch.clientY - rect.top);
+    });
+
+    window.addEventListener('load', resizeSteamCanvas);
+    window.addEventListener('resize', resizeSteamCanvas);
+
+    /* ========================================================
+       4. BEFORE & AFTER INTERATIVO
+       ======================================================== */
+    const sliderContainer = document.getElementById('compareSlider');
+    const afterLayer = document.getElementById('afterLayer');
+    const sliderHandle = document.getElementById('sliderHandle');
+    let isSliding = false;
+
+    function updateSlider(clientX) {
+      const rect = sliderContainer.getBoundingClientRect();
+      let pos = (clientX - rect.left) / rect.width;
+      pos = Math.max(0, Math.min(1, pos));
+      afterLayer.style.width = (pos * 100) + '%';
+      sliderHandle.style.left = (pos * 100) + '%';
+    }
+
+    sliderContainer.addEventListener('mousedown', (e) => {
+      isSliding = true;
+      updateSlider(e.clientX);
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!isSliding) return;
+      updateSlider(e.clientX);
+    });
+    window.addEventListener('mouseup', () => isSliding = false);
+
+    sliderContainer.addEventListener('touchmove', (e) => {
+      updateSlider(e.touches[0].clientX);
+    });
+
+    /* ========================================================
+       5. MENU DE SERVIÇOS & FLOATING TOOLTIP
+       ======================================================== */
+    const tooltip = document.getElementById('serviceTooltip');
+    const serviceRows = document.querySelectorAll('.service-row');
+
+    serviceRows.forEach(row => {
+      row.addEventListener('mouseenter', (e) => {
+        tooltip.innerText = row.getAttribute('data-info');
+        tooltip.style.opacity = '1';
+        playClickSound();
+      });
+
+      row.addEventListener('mousemove', (e) => {
+        tooltip.style.left = e.clientX + 'px';
+        tooltip.style.top = e.clientY + 'px';
+      });
+
+      row.addEventListener('mouseleave', () => {
+        tooltip.style.opacity = '0';
+      });
+    });
+
+    /* ========================================================
+       6. FORMULÁRIO DE AGENDAMENTO
+       ======================================================== */
+    function handleBooking(e) {
+      e.preventDefault();
+      playClickSound();
+      alert('Solicitação recebida com sucesso! A equipe da Barbearia Santos confirmará o seu horário via WhatsApp.');
+    }
+  </script>
+</body>
+</html>
